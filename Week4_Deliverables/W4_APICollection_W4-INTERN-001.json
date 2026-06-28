@@ -1,0 +1,330 @@
+{
+  "info": {
+    "_postman_id": "stayinsight-ai-w4-collection",
+    "name": "StayInsight AI – Week 4 API Collection",
+    "description": "Complete API collection for StayInsight AI backend. Base URL: http://localhost:5000\n\nDemo credentials:\n- email: admin@stayinsight.ai | password: password123\n- email: demo@stayinsight.ai  | password: demo1234",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000", "type": "string" },
+    { "key": "token",   "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "GET / – API Root",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/", "host": ["{{baseUrl}}"], "path": [""] },
+            "description": "Check that the API is running and see all available endpoints."
+          },
+          "response": [
+            {
+              "name": "200 OK – API Running",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"StayInsight AI API is running.\",\n  \"version\": \"1.0.0\",\n  \"endpoints\": {\n    \"auth\": \"POST /api/login\",\n    \"dashboard\": \"GET /api/dashboard\",\n    \"reviews\": {\n      \"list\": \"GET /api/reviews\",\n      \"search\": \"GET /api/reviews/search?q=<query>\",\n      \"getOne\": \"GET /api/reviews/:id\",\n      \"create\": \"POST /api/reviews\",\n      \"update\": \"PUT /api/reviews/:id\",\n      \"delete\": \"DELETE /api/reviews/:id\"\n    }\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST /api/login – Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.token) {",
+                  "  pm.collectionVariables.set('token', res.data.token);",
+                  "  console.log('Token saved:', res.data.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@stayinsight.ai\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/login", "host": ["{{baseUrl}}"], "path": ["api", "login"] },
+            "description": "Login with admin credentials. Token is auto-saved to collection variable."
+          },
+          "response": [
+            {
+              "name": "200 OK – Login Successful",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Login successful.\",\n  \"data\": {\n    \"token\": \"MTphZG1pbkBzdGF5aW5zaWdodC5haToxNzE5NTAwMDAwMDAw\",\n    \"user\": {\n      \"id\": 1,\n      \"name\": \"Admin User\",\n      \"email\": \"admin@stayinsight.ai\",\n      \"role\": \"admin\"\n    }\n  }\n}"
+            },
+            {
+              "name": "401 Unauthorized – Wrong Password",
+              "status": "Unauthorized",
+              "code": 401,
+              "body": "{\n  \"success\": false,\n  \"message\": \"Invalid email or password.\"\n}"
+            },
+            {
+              "name": "400 Bad Request – Missing Fields",
+              "status": "Bad Request",
+              "code": 400,
+              "body": "{\n  \"success\": false,\n  \"message\": \"Email and password are required.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST /api/login – Demo User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"demo@stayinsight.ai\",\n  \"password\": \"demo1234\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/login", "host": ["{{baseUrl}}"], "path": ["api", "login"] }
+          },
+          "response": [
+            {
+              "name": "200 OK – Demo Login",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Login successful.\",\n  \"data\": {\n    \"token\": \"MjpkZW1vQHN0YXlpbnNpZ2h0LmFpOjE3MTk1MDAwMDAwMDA=\",\n    \"user\": {\n      \"id\": 2,\n      \"name\": \"Demo User\",\n      \"email\": \"demo@stayinsight.ai\",\n      \"role\": \"viewer\"\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST /api/login – Invalid (401)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nobody@test.com\",\n  \"password\": \"wrongpassword\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/login", "host": ["{{baseUrl}}"], "path": ["api", "login"] }
+          },
+          "response": [
+            {
+              "name": "401 Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "body": "{\n  \"success\": false,\n  \"message\": \"Invalid email or password.\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "GET /api/dashboard",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/dashboard", "host": ["{{baseUrl}}"], "path": ["api", "dashboard"] },
+            "description": "Fetch aggregated analytics: total reviews, average rating, sentiment breakdown, recent reviews, property summary."
+          },
+          "response": [
+            {
+              "name": "200 OK – Dashboard Data",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Dashboard data retrieved successfully.\",\n  \"data\": {\n    \"totalReviews\": 5,\n    \"averageRating\": 3.8,\n    \"sentimentBreakdown\": {\n      \"positive\": 3,\n      \"neutral\": 1,\n      \"negative\": 1\n    },\n    \"recentReviews\": [\n      {\n        \"id\": 5,\n        \"guestName\": \"Emily Chen\",\n        \"property\": \"Beachfront Bungalow\",\n        \"rating\": 5,\n        \"sentiment\": \"positive\",\n        \"comment\": \"Perfect beach holiday!\",\n        \"tags\": [\"cleanliness\", \"location\", \"ambiance\"],\n        \"createdAt\": \"2025-06-15T11:00:00.000Z\"\n      }\n    ],\n    \"propertySummary\": [\n      { \"property\": \"Ocean View Villa\",    \"reviewCount\": 2, \"avgRating\": 3.5 },\n      { \"property\": \"Downtown Loft\",        \"reviewCount\": 1, \"avgRating\": 3   },\n      { \"property\": \"Mountain Retreat\",     \"reviewCount\": 1, \"avgRating\": 4   },\n      { \"property\": \"Beachfront Bungalow\",  \"reviewCount\": 1, \"avgRating\": 5   }\n    ]\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Reviews",
+      "item": [
+        {
+          "name": "GET /api/reviews – List All",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/reviews", "host": ["{{baseUrl}}"], "path": ["api", "reviews"] },
+            "description": "Retrieve all reviews from the in-memory store."
+          },
+          "response": [
+            {
+              "name": "200 OK – All Reviews",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Reviews retrieved successfully.\",\n  \"count\": 5,\n  \"data\": [\n    {\n      \"id\": 1,\n      \"guestName\": \"Alice Johnson\",\n      \"property\": \"Ocean View Villa\",\n      \"rating\": 5,\n      \"sentiment\": \"positive\",\n      \"comment\": \"Absolutely stunning property!\",\n      \"tags\": [\"cleanliness\", \"location\", \"service\"],\n      \"createdAt\": \"2025-05-10T08:23:00.000Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "GET /api/reviews/search?q=clean",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews/search?q=clean",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reviews", "search"],
+              "query": [{ "key": "q", "value": "clean" }]
+            },
+            "description": "Search reviews by guest name, property, comment, tags, or sentiment."
+          },
+          "response": [
+            {
+              "name": "200 OK – Search Results",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Search completed. 2 result(s) found.\",\n  \"count\": 2,\n  \"query\": \"clean\",\n  \"data\": []\n}"
+            },
+            {
+              "name": "400 Bad Request – Missing q",
+              "status": "Bad Request",
+              "code": 400,
+              "body": "{\n  \"success\": false,\n  \"message\": \"Query parameter \\\"q\\\" is required for search.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "GET /api/reviews/search?q=positive",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews/search?q=positive",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reviews", "search"],
+              "query": [{ "key": "q", "value": "positive" }]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/reviews/:id – Get One",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/reviews/1", "host": ["{{baseUrl}}"], "path": ["api", "reviews", "1"] },
+            "description": "Get a single review by numeric ID."
+          },
+          "response": [
+            {
+              "name": "200 OK – Review Found",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Review retrieved successfully.\",\n  \"data\": {\n    \"id\": 1,\n    \"guestName\": \"Alice Johnson\",\n    \"property\": \"Ocean View Villa\",\n    \"rating\": 5,\n    \"sentiment\": \"positive\",\n    \"comment\": \"Absolutely stunning property! The views were breathtaking and the host was incredibly attentive.\",\n    \"tags\": [\"cleanliness\", \"location\", \"service\"],\n    \"createdAt\": \"2025-05-10T08:23:00.000Z\"\n  }\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "body": "{\n  \"success\": false,\n  \"message\": \"Review with ID 99 not found.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "GET /api/reviews/99 – Not Found (404)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/reviews/99", "host": ["{{baseUrl}}"], "path": ["api", "reviews", "99"] }
+          },
+          "response": [
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "body": "{\n  \"success\": false,\n  \"message\": \"Review with ID 99 not found.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST /api/reviews – Create",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"guestName\": \"Priya Sharma\",\n  \"property\": \"Himalayan Hideaway\",\n  \"rating\": 5,\n  \"sentiment\": \"positive\",\n  \"comment\": \"Absolutely magical stay. The mountain views were stunning and the staff were warm and attentive throughout.\",\n  \"tags\": [\"location\", \"service\", \"ambiance\"]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/reviews", "host": ["{{baseUrl}}"], "path": ["api", "reviews"] },
+            "description": "Create a new review. Required: guestName, property, rating (1–5), comment."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Review created successfully.\",\n  \"data\": {\n    \"id\": 6,\n    \"guestName\": \"Priya Sharma\",\n    \"property\": \"Himalayan Hideaway\",\n    \"rating\": 5,\n    \"sentiment\": \"positive\",\n    \"comment\": \"Absolutely magical stay.\",\n    \"tags\": [\"location\", \"service\", \"ambiance\"],\n    \"createdAt\": \"2025-06-27T10:00:00.000Z\"\n  }\n}"
+            },
+            {
+              "name": "400 Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "body": "{\n  \"success\": false,\n  \"message\": \"Validation failed.\",\n  \"errors\": [\"rating is required and must be a number between 1 and 5.\"]\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST /api/reviews – Validation Error (400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"guestName\": \"\",\n  \"property\": \"\",\n  \"rating\": 10,\n  \"comment\": \"\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/reviews", "host": ["{{baseUrl}}"], "path": ["api", "reviews"] }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/reviews/:id – Update",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 4,\n  \"sentiment\": \"positive\",\n  \"comment\": \"Updated: Great stay overall, minor issues with WiFi but staff resolved it quickly.\",\n  \"tags\": [\"service\", \"wifi\"]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/reviews/2", "host": ["{{baseUrl}}"], "path": ["api", "reviews", "2"] },
+            "description": "Partially update an existing review. All fields optional."
+          },
+          "response": [
+            {
+              "name": "200 OK – Updated",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Review updated successfully.\",\n  \"data\": {\n    \"id\": 2,\n    \"guestName\": \"Bob Martinez\",\n    \"property\": \"Downtown Loft\",\n    \"rating\": 4,\n    \"sentiment\": \"positive\",\n    \"comment\": \"Updated: Great stay overall.\",\n    \"tags\": [\"service\", \"wifi\"],\n    \"createdAt\": \"2025-05-18T14:10:00.000Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "DELETE /api/reviews/:id – Delete",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/reviews/3", "host": ["{{baseUrl}}"], "path": ["api", "reviews", "3"] },
+            "description": "Delete a review by ID. Returns 204 No Content on success."
+          },
+          "response": [
+            {
+              "name": "204 No Content – Deleted",
+              "status": "No Content",
+              "code": 204,
+              "body": ""
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "body": "{\n  \"success\": false,\n  \"message\": \"Review with ID 3 not found.\"\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,6 +1,8 @@
 import { useState } from 'react'
-import { NavLink, Link } from 'react-router-dom'
+import { NavLink, Link, useNavigate } from 'react-router-dom'
 import { useTheme } from '../context/ThemeContext'
+import { useAuth } from '../context/AuthContext'
+import { useToast } from './ui/Toast'
 
 const NAV_LINKS = [
   { label: 'Home',      to: '/' },
@@ -8,7 +10,6 @@ const NAV_LINKS = [
   { label: 'Dashboard', to: '/dashboard' },
 ]
 
-/* Sun / Moon icons */
 function SunIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -27,8 +28,17 @@ function MoonIcon() {
 }
 
 export default function Navbar() {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen]       = useState(false)
   const { theme, toggleTheme } = useTheme()
+  const { isLoggedIn, user, logout } = useAuth()
+  const { addToast }          = useToast()
+  const navigate              = useNavigate()
+
+  function handleLogout() {
+    logout()
+    addToast({ message: 'Signed out successfully.', type: 'info' })
+    navigate('/')
+  }
 
   return (
     <header className="sticky top-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
@@ -68,9 +78,8 @@ export default function Navbar() {
             ))}
           </nav>
 
-          {/* CTA + theme toggle + mobile toggle */}
+          {/* CTA + theme toggle */}
           <div className="flex items-center gap-2">
-            {/* Theme toggle */}
             <button
               onClick={toggleTheme}
               aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
@@ -79,12 +88,18 @@ export default function Navbar() {
               {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
             </button>
 
-            <Link
-              to="/login"
-              className="hidden md:inline-flex btn-primary text-xs px-3 py-1.5"
-            >
-              Sign in
-            </Link>
+            {isLoggedIn ? (
+              <div className="hidden md:flex items-center gap-2">
+                <span className="text-xs text-gray-500 dark:text-gray-400">{user?.name}</span>
+                <button onClick={handleLogout} className="btn-secondary text-xs px-3 py-1.5">
+                  Sign out
+                </button>
+              </div>
+            ) : (
+              <Link to="/login" className="hidden md:inline-flex btn-primary text-xs px-3 py-1.5">
+                Sign in
+              </Link>
+            )}
 
             <button
               onClick={() => setOpen(!open)}
@@ -100,7 +115,7 @@ export default function Navbar() {
       </div>
 
       {/* Mobile menu */}
-      <div className={`md:hidden overflow-hidden transition-all duration-200 ${open ? 'max-h-64' : 'max-h-0'}`}>
+      <div className={`md:hidden overflow-hidden transition-all duration-200 ${open ? 'max-h-72' : 'max-h-0'}`}>
         <div className="px-4 py-3 space-y-1 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
           {NAV_LINKS.map(({ label, to }) => (
             <NavLink
@@ -119,13 +134,22 @@ export default function Navbar() {
               {label}
             </NavLink>
           ))}
-          <Link
-            to="/login"
-            onClick={() => setOpen(false)}
-            className="block mt-2 px-3 py-2 text-sm font-medium text-white bg-brand-600 dark:bg-brand-500 rounded-lg text-center hover:bg-brand-700"
-          >
-            Sign in
-          </Link>
+          {isLoggedIn ? (
+            <button
+              onClick={() => { handleLogout(); setOpen(false) }}
+              className="block w-full mt-2 px-3 py-2 text-sm font-medium text-white bg-gray-600 rounded-lg text-center hover:bg-gray-700"
+            >
+              Sign out ({user?.name})
+            </button>
+          ) : (
+            <Link
+              to="/login"
+              onClick={() => setOpen(false)}
+              className="block mt-2 px-3 py-2 text-sm font-medium text-white bg-brand-600 dark:bg-brand-500 rounded-lg text-center hover:bg-brand-700"
+            >
+              Sign in
+            </Link>
+          )}
         </div>
       </div>
     </header>

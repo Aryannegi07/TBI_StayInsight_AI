@@ -1,30 +1,10 @@
+import { useState, useEffect, useCallback } from 'react'
+import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
-import { Link } from 'react-router-dom'
-
-const STATS = [
-  { label: 'Total Reviews',    value: '1,284', change: '+12% this month',  up: true  },
-  { label: 'Positive Reviews', value: '964',   change: '+8% this month',   up: true  },
-  { label: 'Negative Reviews', value: '183',   change: '−3% this month',   up: false },
-  { label: 'Average Rating',   value: '4.6',   change: '+0.2 this month',  up: true  },
-]
-
-const CHART_DATA = [
-  { month: 'Jan', pos: 72, neg: 18 },
-  { month: 'Feb', pos: 68, neg: 22 },
-  { month: 'Mar', pos: 80, neg: 14 },
-  { month: 'Apr', pos: 75, neg: 17 },
-  { month: 'May', pos: 88, neg: 10 },
-  { month: 'Jun', pos: 91, neg: 8  },
-]
-
-const RECENT = [
-  { title: 'Exceptional Stay',       sentiment: 'positive', theme: 'Service',     time: '2 min ago'  },
-  { title: 'Noisy but Great Location', sentiment: 'neutral',  theme: 'Location',  time: '18 min ago' },
-  { title: 'Not Worth the Price',    sentiment: 'negative', theme: 'Value',        time: '1 hr ago'   },
-  { title: 'Wonderful Breakfast',    sentiment: 'positive', theme: 'Food',         time: '3 hrs ago'  },
-  { title: 'Clean Room, Slow Service', sentiment: 'neutral', theme: 'Cleanliness', time: '5 hrs ago'  },
-]
+import Loader from '../components/ui/Loader'
+import { useToast } from '../components/ui/Toast'
+import { DashboardAPI } from '../api/api'
 
 const SENTIMENT_DOT = {
   positive: 'bg-green-500',
@@ -32,9 +12,51 @@ const SENTIMENT_DOT = {
   negative: 'bg-red-400',
 }
 
+function timeAgo(iso) {
+  const diff = Date.now() - new Date(iso).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins} min ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs} hr${hrs > 1 ? 's' : ''} ago`
+  return `${Math.floor(hrs / 24)}d ago`
+}
+
 export default function Dashboard() {
+  const [data, setData]     = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError]   = useState(null)
+  const { addToast } = useToast()
+
+  const fetchDashboard = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await DashboardAPI.get()
+      setData(res.data)
+    } catch (err) {
+      setError(err.message)
+      addToast({ message: err.message, type: 'error' })
+    } finally {
+      setLoading(false)
+    }
+  }, [addToast])
+
+  useEffect(() => { fetchDashboard() }, [fetchDashboard])
+
+  // Derive stat cards from real data
+  const stats = data ? [
+    { label: 'Total Reviews',    value: data.totalReviews.toLocaleString(),                   up: true  },
+    { label: 'Positive Reviews', value: data.sentimentBreakdown.positive.toLocaleString(),    up: true  },
+    { label: 'Negative Reviews', value: data.sentimentBreakdown.negative.toLocaleString(),    up: false },
+    { label: 'Average Rating',   value: data.averageRating.toFixed(1),                        up: true  },
+  ] : []
+
+  // Chart: property summary as horizontal bars
+  const chartItems = data?.propertySummary ?? []
+
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
       <Navbar />
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-12">
@@ -42,84 +64,138 @@ export default function Dashboard() {
         {/* Heading */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Analytics Dashboard</h1>
-            <p className="mt-1 text-sm text-gray-500">Real-time insight across all guest reviews.</p>
+            <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Analytics Dashboard</h1>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Real-time insight across all guest reviews.</p>
           </div>
-          <Link to="/reviews" className="btn-primary self-start">
-            Analyse New Review
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-              <path d="M2 6.5H11M11 6.5L7.5 3M11 6.5L7.5 10" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </Link>
-        </div>
-
-        {/* Stat cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {STATS.map(({ label, value, change, up }) => (
-            <div key={label} className="card p-5">
-              <p className="text-xs font-medium text-gray-500 mb-1">{label}</p>
-              <p className="text-2xl font-bold text-gray-900 mb-1">{value}</p>
-              <p className={`text-xs font-medium ${up ? 'text-green-600' : 'text-red-500'}`}>{change}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Chart + recent */}
-        <div className="grid lg:grid-cols-3 gap-5">
-
-          {/* Bar chart */}
-          <div className="lg:col-span-2 card p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-sm font-semibold text-gray-900">Sentiment Trend</h2>
-                <p className="text-xs text-gray-400 mt-0.5">Positive vs Negative — last 6 months</p>
-              </div>
-              <div className="flex items-center gap-4 text-xs text-gray-500">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-sm bg-green-500 inline-block" /> Positive
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-sm bg-red-400 inline-block" /> Negative
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-end justify-between gap-2 h-36 pb-1">
-              {CHART_DATA.map(({ month, pos, neg }) => (
-                <div key={month} className="flex-1 flex flex-col items-center gap-1.5">
-                  <div className="w-full flex gap-0.5 items-end h-28">
-                    <div className="flex-1 rounded-t bg-green-500 hover:bg-green-600 transition-colors" style={{ height: `${pos}%` }} />
-                    <div className="flex-1 rounded-t bg-red-400 hover:bg-red-500 transition-colors"   style={{ height: `${neg}%` }} />
-                  </div>
-                  <span className="text-[10px] text-gray-400">{month}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Recent activity */}
-          <div className="card p-6">
-            <h2 className="text-sm font-semibold text-gray-900 mb-4">Recent Reviews</h2>
-            <ul className="space-y-3">
-              {RECENT.map(({ title, sentiment, theme, time }, i) => (
-                <li key={i} className="flex items-start gap-2.5 pb-3 border-b border-gray-100 last:border-0 last:pb-0">
-                  <span className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${SENTIMENT_DOT[sentiment]}`} />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium text-gray-900 truncate">{title}</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">{theme}</p>
-                  </div>
-                  <span className="text-[10px] text-gray-400 flex-shrink-0 mt-0.5">{time}</span>
-                </li>
-              ))}
-            </ul>
-            <Link to="/reviews" className="mt-4 flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700 font-medium transition-colors">
-              View all
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                <path d="M2 5h6M6 3l2 2-2 2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={fetchDashboard}
+              disabled={loading}
+              className="btn-secondary text-xs disabled:opacity-50"
+            >
+              {loading ? <Loader size="sm" /> : (
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                  <path d="M11 6.5A4.5 4.5 0 1 1 6.5 2a4.5 4.5 0 0 1 3.18 1.32" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+                  <path d="M9.5 1.5v2.5H12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
+              Refresh
+            </button>
+            <Link to="/reviews" className="btn-primary self-start">
+              Analyse New Review
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <path d="M2 6.5H11M11 6.5L7.5 3M11 6.5L7.5 10" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </Link>
           </div>
         </div>
+
+        {/* Loading state */}
+        {loading && (
+          <div className="flex items-center justify-center py-24">
+            <Loader size="lg" label="Loading dashboard…" />
+          </div>
+        )}
+
+        {/* Error state */}
+        {!loading && error && (
+          <div className="card p-8 text-center">
+            <p className="text-red-500 font-medium mb-2">Failed to load dashboard</p>
+            <p className="text-sm text-gray-500 mb-4">{error}</p>
+            <button onClick={fetchDashboard} className="btn-primary mx-auto">Retry</button>
+          </div>
+        )}
+
+        {/* Data */}
+        {!loading && !error && data && (
+          <>
+            {/* Stat cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              {stats.map(({ label, value, up }) => (
+                <div key={label} className="card p-5">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{label}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">{value}</p>
+                  <p className={`text-xs font-medium ${up ? 'text-green-600' : 'text-red-500'}`}>
+                    {up ? '▲' : '▼'} live data
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {/* Chart + recent */}
+            <div className="grid lg:grid-cols-3 gap-5">
+
+              {/* Property summary bars */}
+              <div className="lg:col-span-2 card p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Property Performance</h2>
+                    <p className="text-xs text-gray-400 mt-0.5">Review count & average rating per property</p>
+                  </div>
+                </div>
+
+                {chartItems.length === 0 ? (
+                  <p className="text-sm text-gray-400 text-center py-8">No property data yet.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {chartItems.map(({ property, reviewCount, avgRating }) => (
+                      <div key={property}>
+                        <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-300 mb-1">
+                          <span className="truncate font-medium">{property}</span>
+                          <span className="ml-2 flex-shrink-0 text-gray-400">{reviewCount} review{reviewCount !== 1 ? 's' : ''} · {avgRating}★</span>
+                        </div>
+                        <div className="h-2 w-full rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-brand-600 transition-all duration-500"
+                            style={{ width: `${(avgRating / 5) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Sentiment breakdown */}
+                <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-around text-center">
+                  {Object.entries(data.sentimentBreakdown).map(([s, count]) => (
+                    <div key={s}>
+                      <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{count}</p>
+                      <p className="text-xs text-gray-500 capitalize">{s}</p>
+                      <span className={`inline-block mt-1 w-2 h-2 rounded-full ${SENTIMENT_DOT[s]}`} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Recent reviews */}
+              <div className="card p-6">
+                <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Recent Reviews</h2>
+                {data.recentReviews.length === 0 ? (
+                  <p className="text-sm text-gray-400">No reviews yet.</p>
+                ) : (
+                  <ul className="space-y-3">
+                    {data.recentReviews.map((r) => (
+                      <li key={r.id} className="flex items-start gap-2.5 pb-3 border-b border-gray-100 dark:border-gray-700 last:border-0 last:pb-0">
+                        <span className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${SENTIMENT_DOT[r.sentiment]}`} />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">{r.property}</p>
+                          <p className="text-[10px] text-gray-400 mt-0.5 truncate">{r.guestName} · {r.rating}★</p>
+                        </div>
+                        <span className="text-[10px] text-gray-400 flex-shrink-0 mt-0.5">{timeAgo(r.createdAt)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <Link to="/reviews" className="mt-4 flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700 font-medium transition-colors">
+                  View all
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <path d="M2 5h6M6 3l2 2-2 2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </Link>
+              </div>
+            </div>
+          </>
+        )}
       </main>
 
       <Footer />
