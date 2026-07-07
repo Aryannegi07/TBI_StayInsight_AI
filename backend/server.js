@@ -11,6 +11,10 @@ const { notFound, errorHandler } = require('./middleware/errorHandler');
 const authRoutes = require('./routes/auth');
 const dashboardRoutes = require('./routes/dashboard');
 const reviewsRoutes = require('./routes/reviews');
+const usersRoutes = require('./routes/users');
+const analysesRoutes = require('./routes/analyses');
+
+const prisma = require('./lib/prisma');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -47,6 +51,20 @@ app.get('/', (req, res) => {
         update: 'PUT /api/reviews/:id',
         delete: 'DELETE /api/reviews/:id',
       },
+      users: {
+        list: 'GET /api/users',
+        getOne: 'GET /api/users/:id',
+        create: 'POST /api/users',
+        update: 'PUT /api/users/:id',
+        delete: 'DELETE /api/users/:id',
+      },
+      analyses: {
+        list: 'GET /api/analyses',
+        getOne: 'GET /api/analyses/:id',
+        create: 'POST /api/analyses',
+        update: 'PUT /api/analyses/:id',
+        delete: 'DELETE /api/analyses/:id',
+      },
     },
   });
 });
@@ -56,6 +74,8 @@ app.get('/', (req, res) => {
 app.use('/api', authRoutes);
 app.use('/api', dashboardRoutes);
 app.use('/api', reviewsRoutes);
+app.use('/api', usersRoutes);
+app.use('/api', analysesRoutes);
 
 // ── Error Handling (must be last) ─────────────────────────────────────────────
 
@@ -64,9 +84,23 @@ app.use(errorHandler);
 
 // ── Start Server ──────────────────────────────────────────────────────────────
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`\n✅  StayInsight AI backend running at http://localhost:${PORT}`);
   console.log(`📋  API root:  http://localhost:${PORT}/\n`);
 });
+
+// ── Graceful Shutdown (Week 5: closes the Prisma connection pool) ─────────────
+
+async function shutdown(signal) {
+  console.log(`\n${signal} received. Shutting down gracefully...`);
+  server.close(async () => {
+    await prisma.$disconnect();
+    console.log('Prisma connection pool closed. Bye!');
+    process.exit(0);
+  });
+}
+
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
 
 module.exports = app;

@@ -1,0 +1,71 @@
+// ─── StayInsight AI — Prisma Schema ─────────────────────────────────────────
+// Week 5: Database Integration
+// Provider: PostgreSQL (hosted on Supabase in production; see backend/.env)
+//
+// NOTE ON DATABASE_URL vs DIRECT_URL:
+// Supabase gives you two connection strings — a pooled one (via PgBouncer,
+// port 6543) for your app to use at runtime, and a direct one (port 5432)
+// for running migrations. Prisma needs both if you use the connection
+// pooler, which is why `directUrl` is set below. If you're only ever
+// connecting directly (no pooler), you can point both env vars at the
+// same URL.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String?
+  role      String   @default("viewer")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reviews Review[]
+
+  @@map("users")
+}
+
+model Review {
+  id         Int      @id @default(autoincrement())
+  guestName  String
+  property   String
+  rating     Int
+  sentiment  String
+  comment    String
+  theme      String?
+  tags       String[] @default([])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  userId Int?
+  user   User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  analysis Analysis?
+
+  @@index([property])
+  @@index([userId])
+  @@map("reviews")
+}
+
+model Analysis {
+  id             Int      @id @default(autoincrement())
+  reviewId       Int      @unique
+  summary        String
+  keywords       String[] @default([])
+  recommendation String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@map("analyses")
+}

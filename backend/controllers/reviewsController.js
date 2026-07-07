@@ -1,13 +1,8 @@
 // ─── Reviews Controller ───────────────────────────────────────────────────────
+// Week 5: rewired from the in-memory array in data/store.js onto Prisma +
+// PostgreSQL. Response shapes and HTTP status codes are unchanged from Week 4.
 
-const {
-  getAllReviews,
-  getReviewById,
-  createReview,
-  updateReview,
-  deleteReview,
-  searchReviews,
-} = require('../data/store');
+const prisma = require('../lib/prisma');
 
 // ── Validation helper ─────────────────────────────────────────────────────────
 
@@ -50,9 +45,12 @@ function validateReviewBody(body) {
 /**
  * GET /api/reviews
  */
-function getAllReviewsHandler(req, res) {
+async function getAllReviewsHandler(req, res, next) {
   try {
-    const reviews = getAllReviews();
+    const reviews = await prisma.review.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: { analysis: true },
+    });
     return res.status(200).json({
       success: true,
       message: 'Reviews retrieved successfully.',
@@ -60,7 +58,7 @@ function getAllReviewsHandler(req, res) {
       data: reviews,
     });
   } catch (err) {
-    return res.status(500).json({ success: false, message: 'Failed to retrieve reviews.' });
+    return next(err);
   }
 }
 
@@ -68,7 +66,7 @@ function getAllReviewsHandler(req, res) {
  * GET /api/reviews/search?q=<query>
  * Must be registered BEFORE /:id so Express matches it first.
  */
-function searchReviewsHandler(req, res) {
+async function searchReviewsHandler(req, res, next) {
   try {
     const { q } = req.query;
 
@@ -79,7 +77,19 @@ function searchReviewsHandler(req, res) {
       });
     }
 
-    const results = searchReviews(q.trim());
+    const query = q.trim();
+
+    const results = await prisma.review.findMany({
+      where: {
+        OR: [
+          { guestName: { contains: query, mode: 'insensitive' } },
+          { property: { contains: query, mode: 'insensitive' } },
+          { comment: { contains: query, mode: 'insensitive' } },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
     return res.status(200).json({
       success: true,
       message: `Search completed. ${results.length} result(s) found.`,
@@ -88,14 +98,14 @@ function searchReviewsHandler(req, res) {
       data: results,
     });
   } catch (err) {
-    return res.status(500).json({ success: false, message: 'Search failed.' });
+    return next(err);
   }
 }
 
 /**
  * GET /api/reviews/:id
  */
-function getReviewByIdHandler(req, res) {
+async function getReviewByIdHandler(req, res, next) {
   try {
     const { id } = req.params;
 
@@ -103,7 +113,11 @@ function getReviewByIdHandler(req, res) {
       return res.status(400).json({ success: false, message: 'Review ID must be a number.' });
     }
 
-    const review = getReviewById(id);
+    const review = await prisma.review.findUnique({
+      where: { id: Number(id) },
+      include: { analysis: true },
+    });
+
     if (!review) {
       return res.status(404).json({
         success: false,
@@ -117,14 +131,14 @@ function getReviewByIdHandler(req, res) {
       data: review,
     });
   } catch (err) {
-    return res.status(500).json({ success: false, message: 'Failed to retrieve review.' });
+    return next(err);
   }
 }
 
 /**
  * POST /api/reviews
  */
-function createReviewHandler(req, res) {
+async function createReviewHandler(req, res, next) {
   try {
     const errors = validateReviewBody(req.body);
     if (errors.length > 0) {
@@ -135,21 +149,35 @@ function createReviewHandler(req, res) {
       });
     }
 
-    const review = createReview(req.body);
+    const { guestName, property, rating, comment, sentiment, theme, tags, userId } = req.body;
+
+    const review = await prisma.review.create({
+      data: {
+        guestName,
+        property,
+        rating: Number(rating),
+        comment,
+        sentiment: sentiment || 'neutral',
+        theme,
+        tags: Array.isArray(tags) ? tags : [],
+        userId: userId ? Number(userId) : undefined,
+      },
+    });
+
     return res.status(201).json({
       success: true,
       message: 'Review created successfully.',
       data: review,
     });
   } catch (err) {
-    return res.status(500).json({ success: false, message: 'Failed to create review.' });
+    return next(err);
   }
 }
 
 /**
  * PUT /api/reviews/:id
  */
-function updateReviewHandler(req, res) {
+async function updateReviewHandler(req, res, next) {
   try {
     const { id } = req.params;
 
@@ -157,7 +185,8 @@ function updateReviewHandler(req, res) {
       return res.status(400).json({ success: false, message: 'Review ID must be a number.' });
     }
 
-    if (!getReviewById(id)) {
+    const existing = await prisma.review.findUnique({ where: { id: Number(id) } });
+    if (!existing) {
       return res.status(404).json({
         success: false,
         message: `Review with ID ${id} not found.`,
@@ -191,21 +220,32 @@ function updateReviewHandler(req, res) {
       });
     }
 
-    const updated = updateReview(id, body);
+    const data = {};
+    ['guestName', 'property', 'comment', 'sentiment', 'theme', 'tags'].forEach((key) => {
+      if (body[key] !== undefined) data[key] = body[key];
+    });
+    if (body.rating !== undefined) data.rating = Number(body.rating);
+    if (body.userId !== undefined) data.userId = body.userId ? Number(body.userId) : null;
+
+    const updated = await prisma.review.update({
+      where: { id: Number(id) },
+      data,
+    });
+
     return res.status(200).json({
       success: true,
       message: 'Review updated successfully.',
       data: updated,
     });
   } catch (err) {
-    return res.status(500).json({ success: false, message: 'Failed to update review.' });
+    return next(err);
   }
 }
 
 /**
  * DELETE /api/reviews/:id
  */
-function deleteReviewHandler(req, res) {
+async function deleteReviewHandler(req, res, next) {
   try {
     const { id } = req.params;
 
@@ -213,17 +253,19 @@ function deleteReviewHandler(req, res) {
       return res.status(400).json({ success: false, message: 'Review ID must be a number.' });
     }
 
-    const deleted = deleteReview(id);
-    if (!deleted) {
+    const existing = await prisma.review.findUnique({ where: { id: Number(id) } });
+    if (!existing) {
       return res.status(404).json({
         success: false,
         message: `Review with ID ${id} not found.`,
       });
     }
 
+    await prisma.review.delete({ where: { id: Number(id) } });
+
     return res.status(204).send();
   } catch (err) {
-    return res.status(500).json({ success: false, message: 'Failed to delete review.' });
+    return next(err);
   }
 }
 
