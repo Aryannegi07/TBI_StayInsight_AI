@@ -4,7 +4,11 @@ import { useTheme } from '../context/ThemeContext'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from './ui/Toast'
 
-const NAV_LINKS = [
+const PUBLIC_NAV_LINKS = [
+  { label: 'Home', to: '/' },
+]
+
+const AUTHED_NAV_LINKS = [
   { label: 'Home',      to: '/' },
   { label: 'Reviews',   to: '/reviews' },
   { label: 'Dashboard', to: '/dashboard' },
@@ -33,6 +37,7 @@ export default function Navbar() {
   const { isLoggedIn, user, logout } = useAuth()
   const { addToast }          = useToast()
   const navigate              = useNavigate()
+  const NAV_LINKS              = isLoggedIn ? AUTHED_NAV_LINKS : PUBLIC_NAV_LINKS
 
   function handleLogout() {
     logout()
@@ -96,9 +101,14 @@ export default function Navbar() {
                 </button>
               </div>
             ) : (
-              <Link to="/login" className="hidden md:inline-flex btn-primary text-xs px-3 py-1.5">
-                Sign in
-              </Link>
+              <div className="hidden md:flex items-center gap-2">
+                <Link to="/login" className="btn-secondary text-xs px-3 py-1.5">
+                  Sign in
+                </Link>
+                <Link to="/register" className="btn-primary text-xs px-3 py-1.5">
+                  Register
+                </Link>
+              </div>
             )}
 
             <button
@@ -142,13 +152,22 @@ export default function Navbar() {
               Sign out ({user?.name})
             </button>
           ) : (
-            <Link
-              to="/login"
-              onClick={() => setOpen(false)}
-              className="block mt-2 px-3 py-2 text-sm font-medium text-white bg-brand-600 dark:bg-brand-500 rounded-lg text-center hover:bg-brand-700"
-            >
-              Sign in
-            </Link>
+            <div className="mt-2 space-y-1">
+              <Link
+                to="/login"
+                onClick={() => setOpen(false)}
+                className="block px-3 py-2 text-sm font-medium text-white bg-brand-600 dark:bg-brand-500 rounded-lg text-center hover:bg-brand-700"
+              >
+                Sign in
+              </Link>
+              <Link
+                to="/register"
+                onClick={() => setOpen(false)}
+                className="block px-3 py-2 text-sm font-medium text-brand-600 dark:text-brand-400 border border-brand-200 dark:border-brand-700 rounded-lg text-center hover:bg-brand-50 dark:hover:bg-brand-900/30"
+              >
+                Register
+              </Link>
+            </div>
           )}
         </div>
       </div>

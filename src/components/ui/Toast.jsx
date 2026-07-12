@@ -10,7 +10,7 @@
  *
  * Alternatively import the standalone <ToastContainer> and manage state manually.
  */
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 
 /* ── icons ── */
 const icons = {

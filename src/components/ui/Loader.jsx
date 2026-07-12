@@ -6,7 +6,7 @@
  * @param {string} [className] - Extra wrapper classes.
  * @param {boolean} [fullPage=false] - Centers the spinner in the full viewport.
  */
-import React from 'react'
+
 
 const sizeMap = {
   sm: 'w-4 h-4 border-[1.5px]',

@@ -1,5 +1,7 @@
 // ─── Users Routes ─────────────────────────────────────────────────────────────
 // Week 5: new entity CRUD.
+// Week 6: all user endpoints require authentication (user records, even
+// sanitized, are sensitive account data).
 
 const express = require('express');
 const {
@@ -9,8 +11,11 @@ const {
   updateUserHandler,
   deleteUserHandler,
 } = require('../controllers/usersController');
+const { verifyToken } = require('../middleware/auth');
 
 const router = express.Router();
+
+router.use(verifyToken);
 
 // GET    /api/users
 router.get('/users', getAllUsersHandler);

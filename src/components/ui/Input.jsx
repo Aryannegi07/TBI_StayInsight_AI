@@ -10,7 +10,7 @@
  * @param {string} [id] - Input id (auto-generated from label if omitted).
  * @param {string} [className] - Extra wrapper classes.
  */
-import React, { useId } from 'react'
+import { useId } from 'react'
 
 export default function Input({
   label,

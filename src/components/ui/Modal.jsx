@@ -7,7 +7,7 @@
  * @param {React.ReactNode} children - Modal body content.
  * @param {string} [className] - Extra classes for the modal panel.
  */
-import React, { useEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 
 export default function Modal({ isOpen, onClose, title, children, className = '' }) {
   const dialogRef = useRef(null)

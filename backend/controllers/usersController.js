@@ -1,6 +1,7 @@
 // ─── Users Controller ─────────────────────────────────────────────────────────
 // Week 5: new entity. Full CRUD backed by Prisma + PostgreSQL.
 
+const bcrypt = require('bcryptjs');
 const prisma = require('../lib/prisma');
 
 function validateUserBody(body, { partial = false } = {}) {
@@ -89,12 +90,13 @@ async function createUserHandler(req, res, next) {
     }
 
     const { name, email, password, role } = req.body;
+    const hashedPassword = password ? await bcrypt.hash(password, 10) : null;
 
     const user = await prisma.user.create({
       data: {
         name,
         email: email.trim().toLowerCase(),
-        password,
+        password: hashedPassword,
         role: role || 'viewer',
       },
     });
@@ -130,10 +132,13 @@ async function updateUserHandler(req, res, next) {
     }
 
     const data = {};
-    ['name', 'password', 'role'].forEach((key) => {
+    ['name', 'role'].forEach((key) => {
       if (req.body[key] !== undefined) data[key] = req.body[key];
     });
     if (req.body.email !== undefined) data.email = req.body.email.trim().toLowerCase();
+    if (req.body.password !== undefined) {
+      data.password = req.body.password ? await bcrypt.hash(req.body.password, 10) : null;
+    }
 
     const updated = await prisma.user.update({
       where: { id: Number(id) },

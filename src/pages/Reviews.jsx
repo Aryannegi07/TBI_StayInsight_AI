@@ -116,7 +116,7 @@ export default function Reviews() {
     const rating = sentiment === 'positive' ? 5 : sentiment === 'negative' ? 2 : 3
 
     try {
-      const res = await ReviewsAPI.create({
+      await ReviewsAPI.create({
         guestName: 'Guest (Manual Entry)',
         property:  'Manual Review',
         rating,

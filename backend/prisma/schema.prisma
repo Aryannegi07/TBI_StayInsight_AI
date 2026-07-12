@@ -25,6 +25,7 @@ model User {
   name      String
   email     String   @unique
   password  String?
+  googleId  String?  @unique
   role      String   @default("viewer")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

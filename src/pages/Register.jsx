@@ -1,43 +1,35 @@
-import { useState, useEffect } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import Loader from '../components/ui/Loader'
 import GoogleButton from '../components/GoogleButton'
 import { useToast } from '../components/ui/Toast'
 import { AuthAPI } from '../api/api'
-import { useAuth } from '../context/AuthContext'
 
-export default function Login() {
+export default function Register() {
+  const [name, setName]                 = useState('')
   const [email, setEmail]               = useState('')
   const [password, setPassword]         = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading]           = useState(false)
   const [errors, setErrors]             = useState({})
 
-  const navigate   = useNavigate()
-  const { login }  = useAuth()
+  const navigate     = useNavigate()
   const { addToast } = useToast()
-  const [searchParams, setSearchParams] = useSearchParams()
-
-  // Graceful handling of a failed Google OAuth attempt (backend redirects
-  // here with ?oauth_error=1 if the user cancels or Google rejects them).
-  useEffect(() => {
-    if (searchParams.get('oauth_error')) {
-      addToast({ message: 'Google sign-in failed. Please try again or use your email and password.', type: 'error' })
-      setSearchParams({}, { replace: true })
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   function validate() {
     const e = {}
+    if (!name.trim())
+      e.name = 'Name is required.'
     if (!email.trim())
       e.email = 'Email is required.'
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
       e.email = 'Enter a valid email address.'
     if (!password)
       e.password = 'Password is required.'
+    else if (password.length < 6)
+      e.password = 'Password must be at least 6 characters.'
     return e
   }
 
@@ -52,14 +44,13 @@ export default function Login() {
     setErrors({})
     setLoading(true)
     try {
-      const res = await AuthAPI.login(email.trim().toLowerCase(), password)
-      login(res.data)
-      addToast({ message: `Welcome back, ${res.data.user.name}!`, type: 'success' })
-      navigate('/dashboard')
+      await AuthAPI.register(name.trim(), email.trim().toLowerCase(), password)
+      addToast({ message: 'Account created! Please sign in.', type: 'success' })
+      navigate('/login')
     } catch (err) {
-      const msg = err.status === 401
-        ? 'Invalid email or password.'
-        : err.message || 'Login failed. Please try again.'
+      const msg = err.status === 409
+        ? 'An account with this email already exists.'
+        : err.message || 'Registration failed. Please try again.'
       addToast({ message: msg, type: 'error' })
       setErrors({ api: msg })
     } finally {
@@ -86,11 +77,8 @@ export default function Login() {
             </div>
 
             <div className="text-center mb-6">
-              <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Sign in to StayInsight</h1>
-              <p className="text-sm text-gray-500 mt-1">Enter your credentials below</p>
-              <p className="text-xs text-gray-400 mt-2">
-                Demo: <span className="font-mono">admin@stayinsight.ai</span> / <span className="font-mono">password123</span>
-              </p>
+              <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Create your account</h1>
+              <p className="text-sm text-gray-500 mt-1">Join StayInsight to get started</p>
             </div>
 
             {errors.api && (
@@ -100,6 +88,23 @@ export default function Login() {
             )}
 
             <form onSubmit={handleSubmit} noValidate className="space-y-4">
+
+              {/* Name */}
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Full name
+                </label>
+                <input
+                  id="name"
+                  type="text"
+                  autoComplete="name"
+                  value={name}
+                  onChange={e => { setName(e.target.value); setErrors(p => ({ ...p, name: '', api: '' })) }}
+                  placeholder="Jane Doe"
+                  className={`input ${errors.name ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20' : ''}`}
+                />
+                {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name}</p>}
+              </div>
 
               {/* Email */}
               <div>
@@ -112,7 +117,7 @@ export default function Login() {
                   autoComplete="email"
                   value={email}
                   onChange={e => { setEmail(e.target.value); setErrors(p => ({ ...p, email: '', api: '' })) }}
-                  placeholder="admin@stayinsight.ai"
+                  placeholder="jane@stayinsight.ai"
                   className={`input ${errors.email ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20' : ''}`}
                 />
                 {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email}</p>}
@@ -127,10 +132,10 @@ export default function Login() {
                   <input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
-                    autoComplete="current-password"
+                    autoComplete="new-password"
                     value={password}
                     onChange={e => { setPassword(e.target.value); setErrors(p => ({ ...p, password: '', api: '' })) }}
-                    placeholder="Enter your password"
+                    placeholder="Min. 6 characters"
                     className={`input pr-10 ${errors.password ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20' : ''}`}
                   />
                   <button
@@ -164,9 +169,9 @@ export default function Login() {
                 {loading ? (
                   <>
                     <Loader size="sm" />
-                    Signing in…
+                    Creating account…
                   </>
-                ) : 'Sign in'}
+                ) : 'Create account'}
               </button>
             </form>
 
@@ -176,12 +181,12 @@ export default function Login() {
               <span className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
             </div>
 
-            <GoogleButton />
+            <GoogleButton label="Sign up with Google" />
 
             <p className="mt-5 text-center text-xs text-gray-500">
-              Don't have an account?{' '}
-              <Link to="/register" className="text-brand-600 hover:text-brand-700 font-medium transition-colors">
-                Create one
+              Already have an account?{' '}
+              <Link to="/login" className="text-brand-600 hover:text-brand-700 font-medium transition-colors">
+                Sign in
               </Link>
             </p>
           </div>
