@@ -5,6 +5,24 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>stayinsight-ai</title>
+    <script>
+      // Runs before React mounts / first paint, so a user who previously
+      // chose dark mode doesn't see a flash of light mode while
+      // ThemeProvider's useEffect (src/context/ThemeContext.jsx) catches up.
+      // Reads the same 'si-theme' localStorage key ThemeContext uses, so
+      // the two stay in sync.
+      (function () {
+        try {
+          var stored = localStorage.getItem('si-theme');
+          if (stored === 'dark') {
+            document.documentElement.classList.add('dark');
+          }
+        } catch (e) {
+          // localStorage can throw in some privacy modes — fall back to
+          // light mode, same as ThemeContext's default.
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

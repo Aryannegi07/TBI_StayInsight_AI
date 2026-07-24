@@ -4,7 +4,7 @@ import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import Loader from '../components/ui/Loader'
 import GoogleButton from '../components/GoogleButton'
-import { useToast } from '../components/ui/Toast'
+import { useToast } from '../hooks/useToast'
 import { AuthAPI } from '../api/api'
 
 export default function Register() {
@@ -78,7 +78,7 @@ export default function Register() {
 
             <div className="text-center mb-6">
               <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Create your account</h1>
-              <p className="text-sm text-gray-500 mt-1">Join StayInsight to get started</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Join StayInsight to get started</p>
             </div>
 
             {errors.api && (
@@ -183,7 +183,7 @@ export default function Register() {
 
             <GoogleButton label="Sign up with Google" />
 
-            <p className="mt-5 text-center text-xs text-gray-500">
+            <p className="mt-5 text-center text-xs text-gray-500 dark:text-gray-400">
               Already have an account?{' '}
               <Link to="/login" className="text-brand-600 hover:text-brand-700 font-medium transition-colors">
                 Sign in

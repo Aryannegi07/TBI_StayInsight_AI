@@ -39,15 +39,24 @@ const loginValidation = [
   handleValidationErrors,
 ];
 
+const updateMeValidation = [
+  body('name').trim().notEmpty().withMessage('name is required.'),
+  body('newPassword')
+    .optional({ checkFalsy: true })
+    .isLength({ min: 6 }).withMessage('newPassword must be at least 6 characters long.'),
+  body('currentPassword').optional({ checkFalsy: true }).isString(),
+  handleValidationErrors,
+];
+
 // ── Reviews ───────────────────────────────────────────────────────────────
 
 const reviewValidation = [
   body('guestName').trim().notEmpty().withMessage('guestName is required and must be a non-empty string.'),
   body('property').trim().notEmpty().withMessage('property is required and must be a non-empty string.'),
   body('rating')
-    .notEmpty().withMessage('rating is required and must be a number between 1 and 5.')
-    .isFloat({ min: 1, max: 5 }).withMessage('rating is required and must be a number between 1 and 5.'),
-  body('comment').trim().notEmpty().withMessage('comment is required and must be a non-empty string.'),
+    .notEmpty().withMessage('rating is required and must be a whole number between 1 and 5.')
+    .isInt({ min: 1, max: 5 }).withMessage('rating is required and must be a whole number between 1 and 5.'),
+  body('comment').trim().notEmpty().withMessage('comment is required and must be a non-empty string.').isLength({ max: 5000 }).withMessage('comment must be 5000 characters or fewer.'),
   body('sentiment')
     .optional()
     .isIn(['positive', 'neutral', 'negative']).withMessage("sentiment must be one of: 'positive', 'neutral', 'negative'."),
@@ -65,10 +74,27 @@ const analysisValidation = [
   handleValidationErrors,
 ];
 
+// ── AI Analysis ───────────────────────────────────────────────────────────
+
+const aiAnalyzeValidation = [
+  body('reviewId').optional().isInt().withMessage('reviewId must be a number.'),
+  body('comment')
+    .if(body('reviewId').not().exists())
+    .trim()
+    .notEmpty().withMessage('comment is required when reviewId is not provided.')
+    .isLength({ max: 5000 }).withMessage('comment must be 5000 characters or fewer.'),
+  body('guestName').optional().trim().isLength({ max: 200 }).withMessage('guestName must be 200 characters or fewer.'),
+  body('property').optional().trim().isLength({ max: 200 }).withMessage('property must be 200 characters or fewer.'),
+  body('rating').optional().isInt({ min: 1, max: 5 }).withMessage('rating must be a whole number between 1 and 5.'),
+  handleValidationErrors,
+];
+
 module.exports = {
   handleValidationErrors,
   registerValidation,
   loginValidation,
+  updateMeValidation,
   reviewValidation,
   analysisValidation,
+  aiAnalyzeValidation,
 };

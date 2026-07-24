@@ -1,8 +1,21 @@
 // ─── Dashboard Controller ─────────────────────────────────────────────────────
-// Week 5: aggregated stats are now computed from real database rows via
-// Prisma instead of the in-memory array in data/store.js.
+// Week 5: aggregated stats are computed from real database rows via Prisma.
+// Week 8 (perf): rewritten to push aggregation down to PostgreSQL
+// (count/avg/groupBy) instead of pulling every review row into Node and
+// reducing it in JS. All four queries run concurrently via Promise.all,
+// and `recentReviews` uses `select` to fetch only the columns the
+// dashboard UI actually renders — smaller query, smaller response body.
 
 const prisma = require('../lib/prisma');
+
+const RECENT_REVIEWS_SELECT = {
+  id: true,
+  guestName: true,
+  property: true,
+  rating: true,
+  sentiment: true,
+  createdAt: true,
+};
 
 /**
  * GET /api/dashboard
@@ -11,38 +24,38 @@ const prisma = require('../lib/prisma');
  */
 async function getDashboard(req, res, next) {
   try {
-    const reviews = await prisma.review.findMany({
-      orderBy: { createdAt: 'desc' },
+    const [totalReviews, ratingAgg, sentimentGroups, propertyGroups, recentReviews] =
+      await Promise.all([
+        prisma.review.count(),
+        prisma.review.aggregate({ _avg: { rating: true } }),
+        prisma.review.groupBy({ by: ['sentiment'], _count: { _all: true } }),
+        prisma.review.groupBy({
+          by: ['property'],
+          _count: { _all: true },
+          _avg: { rating: true },
+        }),
+        prisma.review.findMany({
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+          select: RECENT_REVIEWS_SELECT,
+        }),
+      ]);
+
+    const averageRating = Number((ratingAgg._avg.rating || 0).toFixed(2));
+
+    const sentimentBreakdown = { positive: 0, neutral: 0, negative: 0 };
+    sentimentGroups.forEach((g) => {
+      sentimentBreakdown[g.sentiment] = g._count._all;
     });
 
-    const totalReviews = reviews.length;
-    const averageRating = totalReviews
-      ? Number((reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews).toFixed(2))
-      : 0;
-
-    const sentimentBreakdown = reviews.reduce(
-      (acc, r) => {
-        acc[r.sentiment] = (acc[r.sentiment] || 0) + 1;
-        return acc;
-      },
-      { positive: 0, neutral: 0, negative: 0 },
-    );
-
-    const propertyMap = {};
-    reviews.forEach((r) => {
-      if (!propertyMap[r.property]) {
-        propertyMap[r.property] = { property: r.property, count: 0, totalRating: 0 };
-      }
-      propertyMap[r.property].count += 1;
-      propertyMap[r.property].totalRating += r.rating;
-    });
-    const propertySummary = Object.values(propertyMap).map((p) => ({
-      property: p.property,
-      reviewCount: p.count,
-      averageRating: Number((p.totalRating / p.count).toFixed(2)),
-    }));
-
-    const recentReviews = reviews.slice(0, 5);
+    const propertySummary = propertyGroups
+      .map((g) => ({
+        property: g.property,
+        reviewCount: g._count._all,
+        averageRating: Number((g._avg.rating || 0).toFixed(2)),
+      }))
+      // Largest properties first — the UI renders this as a ranked bar list.
+      .sort((a, b) => b.reviewCount - a.reviewCount);
 
     return res.status(200).json({
       success: true,

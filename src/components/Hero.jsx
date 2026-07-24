@@ -13,9 +13,9 @@ export default function Hero() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl">
           {/* Eyebrow */}
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-600 bg-brand-50 border border-brand-100 rounded-full px-3 py-1 mb-6">
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/30 border border-brand-100 dark:border-brand-800/50 rounded-full px-3 py-1 mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-            2026 StayInsight AI. All rights reserved
+            Powered by AI-driven guest analytics
           </span>
 
           {/* Headline */}
@@ -50,11 +50,11 @@ export default function Hero() {
           </div>
 
           {/* Stats row */}
-          <div className="flex flex-wrap gap-x-8 gap-y-3 mt-12 pt-8 border-t border-gray-200">
+          <div className="flex flex-wrap gap-x-8 gap-y-3 mt-12 pt-8 border-t border-gray-200 dark:border-gray-700">
             {STATS.map(({ value, label }) => (
               <div key={label}>
-                <div className="text-xl font-bold text-gray-900">{value}</div>
-                <div className="text-xs text-gray-500 mt-0.5">{label}</div>
+                <div className="text-xl font-bold text-gray-900 dark:text-gray-100">{value}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{label}</div>
               </div>
             ))}
           </div>

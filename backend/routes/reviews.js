@@ -29,8 +29,9 @@ router.get('/reviews/:id', getReviewByIdHandler);
 // POST /api/reviews (protected + validated)
 router.post('/reviews', verifyToken, reviewValidation, createReviewHandler);
 
-// PUT  /api/reviews/:id
-router.put('/reviews/:id', updateReviewHandler);
+// PUT  /api/reviews/:id (protected — was previously the only unauthenticated
+// write endpoint on this router, inconsistent with POST/DELETE)
+router.put('/reviews/:id', verifyToken, updateReviewHandler);
 
 // DELETE /api/reviews/:id (protected)
 router.delete('/reviews/:id', verifyToken, deleteReviewHandler);

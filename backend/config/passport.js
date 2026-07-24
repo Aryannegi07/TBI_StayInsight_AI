@@ -27,18 +27,28 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
           if (!email) {
             return done(null, false, { message: 'Google account has no email.' });
           }
+          const picture = profile.photos?.[0]?.value || null;
 
-          // 1. Existing Google-linked user -> log them in.
+          // 1. Existing Google-linked user -> log them in (refresh their
+          //    avatar/name in case they changed it on their Google account).
           let user = await prisma.user.findUnique({ where: { googleId: profile.id } });
 
-          if (!user) {
+          if (user) {
+            user = await prisma.user.update({
+              where: { id: user.id },
+              data: {
+                picture: picture || user.picture,
+                name: profile.displayName || user.name,
+              },
+            });
+          } else {
             // 2. A user already registered with this email (password account)
-            //    -> link the Google ID to that existing account.
+            //    -> link the Google ID (and avatar) to that existing account.
             user = await prisma.user.findUnique({ where: { email } });
             if (user) {
               user = await prisma.user.update({
                 where: { id: user.id },
-                data: { googleId: profile.id },
+                data: { googleId: profile.id, picture: picture || user.picture },
               });
             } else {
               // 3. Brand-new user -> create one automatically.
@@ -47,6 +57,7 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
                   name: profile.displayName || email.split('@')[0],
                   email,
                   googleId: profile.id,
+                  picture,
                   password: null,
                   role: 'viewer',
                 },

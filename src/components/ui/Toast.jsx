@@ -10,7 +10,8 @@
  *
  * Alternatively import the standalone <ToastContainer> and manage state manually.
  */
-import { createContext, useContext, useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect } from 'react'
+import { ToastContext } from './toastContext'
 
 /* ── icons ── */
 const icons = {
@@ -83,7 +84,6 @@ function ToastItem({ toast, onDismiss }) {
 }
 
 /* ── context ── */
-const ToastContext = createContext(null)
 
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([])
@@ -103,16 +103,6 @@ export function ToastProvider({ children }) {
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </ToastContext.Provider>
   )
-}
-
-/**
- * useToast – consume the toast context.
- * @returns {{ addToast: (opts: {message: string, type?: 'success'|'error'|'warning'|'info', duration?: number}) => void }}
- */
-export function useToast() {
-  const ctx = useContext(ToastContext)
-  if (!ctx) throw new Error('useToast must be used inside ToastProvider')
-  return ctx
 }
 
 /* ── standalone container (also used by ToastProvider) ── */

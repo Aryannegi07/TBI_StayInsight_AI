@@ -4,10 +4,12 @@
  * Not an API/axios call — Google's consent screen requires a real
  * browser navigation, not an XHR/fetch request.
  */
+const API_BASE = import.meta.env.VITE_API_URL || '/api'
+
 export default function GoogleButton({ label = 'Continue with Google' }) {
   return (
     <a
-      href="/api/auth/google"
+      href={`${API_BASE}/auth/google`}
       className="btn-secondary w-full justify-center gap-2"
     >
       <svg width="16" height="16" viewBox="0 0 18 18" aria-hidden="true">

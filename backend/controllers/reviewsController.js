@@ -18,8 +18,8 @@ function validateReviewBody(body) {
   }
 
   const rating = Number(body.rating);
-  if (body.rating === undefined || body.rating === null || isNaN(rating) || rating < 1 || rating > 5) {
-    errors.push('rating is required and must be a number between 1 and 5.');
+  if (body.rating === undefined || body.rating === null || isNaN(rating) || !Number.isInteger(rating) || rating < 1 || rating > 5) {
+    errors.push('rating is required and must be a whole number between 1 and 5.');
   }
 
   if (!body.comment || typeof body.comment !== 'string' || !body.comment.trim()) {
@@ -199,8 +199,8 @@ async function updateReviewHandler(req, res, next) {
 
     if (body.rating !== undefined) {
       const rating = Number(body.rating);
-      if (isNaN(rating) || rating < 1 || rating > 5) {
-        partialErrors.push('rating must be a number between 1 and 5.');
+      if (isNaN(rating) || !Number.isInteger(rating) || rating < 1 || rating > 5) {
+        partialErrors.push('rating must be a whole number between 1 and 5.');
       }
     }
 

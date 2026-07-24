@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { NavLink, Link, useNavigate } from 'react-router-dom'
-import { useTheme } from '../context/ThemeContext'
-import { useAuth } from '../context/AuthContext'
-import { useToast } from './ui/Toast'
+import { useTheme } from '../hooks/useTheme'
+import { useAuth } from '../hooks/useAuth'
+import { useToast } from '../hooks/useToast'
 
 const PUBLIC_NAV_LINKS = [
   { label: 'Home', to: '/' },
@@ -12,6 +12,7 @@ const AUTHED_NAV_LINKS = [
   { label: 'Home',      to: '/' },
   { label: 'Reviews',   to: '/reviews' },
   { label: 'Dashboard', to: '/dashboard' },
+  { label: 'Profile',   to: '/profile' },
 ]
 
 function SunIcon() {
@@ -28,6 +29,33 @@ function MoonIcon() {
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
       <path d="M13.5 9.5A6 6 0 016.5 2.5a6 6 0 100 11 6 6 0 007-4z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
+  )
+}
+
+function UserAvatar({ user, size = 24 }) {
+  const initials = (user?.name || '?').trim().charAt(0).toUpperCase()
+  const [imgFailed, setImgFailed] = useState(false)
+
+  if (user?.picture && !imgFailed) {
+    return (
+      <img
+        src={user.picture}
+        alt={user?.name ? `${user.name}'s profile picture` : 'Profile picture'}
+        referrerPolicy="no-referrer"
+        onError={() => setImgFailed(true)}
+        style={{ width: size, height: size }}
+        className="rounded-full object-cover flex-shrink-0 border border-gray-200 dark:border-gray-700"
+      />
+    )
+  }
+
+  return (
+    <span
+      style={{ width: size, height: size }}
+      className="rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 flex items-center justify-center text-xs font-semibold flex-shrink-0"
+    >
+      {initials}
+    </span>
   )
 }
 
@@ -95,7 +123,14 @@ export default function Navbar() {
 
             {isLoggedIn ? (
               <div className="hidden md:flex items-center gap-2">
-                <span className="text-xs text-gray-500 dark:text-gray-400">{user?.name}</span>
+                <Link
+                  to="/profile"
+                  className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  title="View profile"
+                >
+                  <UserAvatar user={user} size={24} />
+                  <span className="text-xs text-gray-500 dark:text-gray-400">{user?.name}</span>
+                </Link>
                 <button onClick={handleLogout} className="btn-secondary text-xs px-3 py-1.5">
                   Sign out
                 </button>
@@ -147,8 +182,9 @@ export default function Navbar() {
           {isLoggedIn ? (
             <button
               onClick={() => { handleLogout(); setOpen(false) }}
-              className="block w-full mt-2 px-3 py-2 text-sm font-medium text-white bg-gray-600 rounded-lg text-center hover:bg-gray-700"
+              className="flex w-full items-center justify-center gap-2 mt-2 px-3 py-2 text-sm font-medium text-white bg-gray-600 rounded-lg hover:bg-gray-700"
             >
+              <UserAvatar user={user} size={18} />
               Sign out ({user?.name})
             </button>
           ) : (

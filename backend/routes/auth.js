@@ -4,8 +4,8 @@
 
 const express = require('express');
 const passport = require('passport');
-const { register, login, me, googleCallback } = require('../controllers/authController');
-const { registerValidation, loginValidation } = require('../middleware/validators');
+const { register, login, me, updateMe, googleCallback } = require('../controllers/authController');
+const { registerValidation, loginValidation, updateMeValidation } = require('../middleware/validators');
 const { authLimiter } = require('../middleware/rateLimiter');
 const { verifyToken } = require('../middleware/auth');
 
@@ -19,6 +19,9 @@ router.post('/login', authLimiter, loginValidation, login);
 
 // GET /api/me (protected)
 router.get('/me', verifyToken, me);
+
+// PUT /api/me (protected) — self-service profile update (name, password)
+router.put('/me', verifyToken, updateMeValidation, updateMe);
 
 // GET /api/auth/google — starts the Google OAuth flow.
 // Returns 503 if GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET aren't configured,

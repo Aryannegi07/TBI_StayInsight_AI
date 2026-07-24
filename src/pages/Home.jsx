@@ -1,28 +1,15 @@
+import { useState, useEffect, useCallback } from 'react'
 import Navbar from '../components/Navbar'
 import Hero from '../components/Hero'
 import ReviewCard from '../components/ReviewCard'
 import Footer from '../components/Footer'
+import EmptyState from '../components/ui/EmptyState'
+import { SkeletonCardGrid } from '../components/ui/Skeleton'
+import { useToast } from '../hooks/useToast'
+import { ReviewsAPI } from '../api/api'
 
-const sampleReviews = [
-  {
-    title: 'Exceptional Stay — Would Return',
-    review: 'The room was spotless and the staff went above and beyond. Breakfast was outstanding, especially the freshly baked bread. Check-in was seamless and the location is perfect for exploring the city.',
-    sentiment: 'positive',
-    theme: 'Cleanliness & Service',
-  },
-  {
-    title: 'Good Location, Noisy Nights',
-    review: 'Location is unbeatable — walking distance to everything. However, the room facing the street was quite noisy after midnight. Might be worth requesting a courtyard-facing room next time.',
-    sentiment: 'neutral',
-    theme: 'Location & Noise',
-  },
-  {
-    title: 'Disappointing for the Price',
-    review: "At this price point I expected more. The bathroom had visible grout stains, the AC rattled constantly, and room service took over an hour. The concierge was helpful but couldn't compensate for the rest.",
-    sentiment: 'negative',
-    theme: 'Value & Maintenance',
-  },
-]
+// How many of the most recent reviews to feature on the landing page.
+const FEATURED_COUNT = 3
 
 const FEATURES = [
   {
@@ -58,45 +45,100 @@ const FEATURES = [
 ]
 
 export default function Home() {
+  const [reviews, setReviews]   = useState([])
+  const [loading, setLoading]   = useState(true)
+  const [error, setError]       = useState(null)
+  const { addToast } = useToast()
+
+  const fetchFeatured = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      // Public endpoint — no auth required. Feature the most recent reviews.
+      const res = await ReviewsAPI.getAll()
+      setReviews((res.data ?? []).slice(0, FEATURED_COUNT))
+    } catch (err) {
+      setError(err.message)
+      addToast({ message: err.message, type: 'error' })
+    } finally {
+      setLoading(false)
+    }
+  }, [addToast])
+
+  useEffect(() => {
+    // Deferred via queueMicrotask so the initial fetch's setState calls don't
+    // run synchronously inside the effect body (avoids cascading renders).
+    queueMicrotask(() => { fetchFeatured() })
+  }, [fetchFeatured])
+
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950">
       <Navbar />
 
       <main className="flex-1">
         <Hero />
 
-        {/* Sample Reviews */}
+        {/* Featured Reviews — live from the backend */}
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-900">Reviews, parsed and understood</h2>
-            <p className="mt-1 text-sm text-gray-500">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Reviews, parsed and understood</h2>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               StayInsight extracts sentiment and themes from every guest review automatically.
             </p>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {sampleReviews.map((r, i) => (
-              <ReviewCard key={i} {...r} />
-            ))}
-          </div>
+
+          {loading && <SkeletonCardGrid count={3} />}
+
+          {!loading && error && (
+            <div className="card p-8 text-center" role="alert">
+              <p className="text-red-500 font-medium mb-2">Failed to load reviews</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{error}</p>
+              <button onClick={fetchFeatured} className="btn-primary mx-auto">Retry</button>
+            </div>
+          )}
+
+          {!loading && !error && reviews.length === 0 && (
+            <EmptyState
+              variant="inline"
+              title="No reviews yet"
+              description="Be the first to analyse a guest review."
+              className="py-12"
+            />
+          )}
+
+          {!loading && !error && reviews.length > 0 && (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {reviews.map((r) => (
+                <ReviewCard
+                  key={r.id}
+                  title={r.property}
+                  review={r.comment}
+                  sentiment={r.sentiment}
+                  theme={r.guestName}
+                  rating={r.rating}
+                />
+              ))}
+            </div>
+          )}
         </section>
 
         {/* Features */}
-        <section className="border-t border-gray-200 bg-gray-50 py-16">
+        <section className="border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/40 py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mb-10">
-              <h2 className="text-xl font-semibold text-gray-900">Everything you need to understand guests</h2>
-              <p className="mt-1 text-sm text-gray-500 max-w-lg">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Everything you need to understand guests</h2>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 max-w-lg">
                 Three core capabilities that turn raw feedback into actionable hospitality intelligence.
               </p>
             </div>
             <div className="grid gap-5 sm:grid-cols-3">
               {FEATURES.map(({ icon, title, description }) => (
-                <div key={title} className="card p-6 hover:shadow-md transition-shadow">
-                  <div className="w-9 h-9 rounded-lg bg-brand-50 border border-brand-100 flex items-center justify-center mb-4">
+                <div key={title} className="card p-6 hover:shadow-md dark:hover:shadow-black/30 transition-shadow">
+                  <div className="w-9 h-9 rounded-lg bg-brand-50 dark:bg-brand-900/30 border border-brand-100 dark:border-brand-800/50 flex items-center justify-center mb-4">
                     {icon}
                   </div>
-                  <h3 className="text-sm font-semibold text-gray-900 mb-2">{title}</h3>
-                  <p className="text-sm text-gray-500 leading-relaxed">{description}</p>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">{title}</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{description}</p>
                 </div>
               ))}
             </div>

@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "build": "prisma generate",
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
@@ -13,20 +14,23 @@
     "prisma:studio": "prisma studio"
   },
   "dependencies": {
-    "@prisma/client": "^6.16.2",
+    "@google/genai": "^2.13.0",
+    "@prisma/client": "^6.19.3",
     "bcryptjs": "^3.0.3",
+    "compression": "^1.7.5",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.18.2",
     "express-rate-limit": "^8.5.2",
     "express-validator": "^7.3.2",
+    "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
     "passport": "^0.7.0",
-    "passport-google-oauth20": "^2.0.0"
+    "passport-google-oauth20": "^2.0.0",
+    "prisma": "^6.19.3"
   },
   "devDependencies": {
-    "nodemon": "^3.1.0",
-    "prisma": "^6.16.2"
+    "nodemon": "^3.1.0"
   },
   "prisma": {
     "seed": "node prisma/seed.js"

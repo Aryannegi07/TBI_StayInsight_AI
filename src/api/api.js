@@ -50,6 +50,7 @@ async function request(method, path, body = null) {
       data?.message ||
       (status === 404 ? 'Resource not found.' :
        status === 401 ? 'Unauthorised – please log in.' :
+       status === 403 ? 'You do not have permission to perform this action.' :
        status === 429 ? 'Too many requests. Please try again later.' :
        status === 500 ? 'Internal server error. Try again later.' :
        `Request failed (${status}).`)
@@ -75,6 +76,7 @@ export const AuthAPI = {
   login:    (email, password)          => apiPost('/login', { email, password }),
   register: (name, email, password)    => apiPost('/register', { name, email, password }),
   me:       ()                         => apiGet('/me'),
+  updateMe: (body)                     => apiPut('/me', body),
 }
 
 export const ReviewsAPI = {
@@ -88,4 +90,9 @@ export const ReviewsAPI = {
 
 export const DashboardAPI = {
   get: () => apiGet('/dashboard'),
+}
+
+export const AIApi = {
+  // Body: { comment, guestName?, property?, rating? } OR { reviewId }
+  analyze: (body) => apiPost('/ai/analyze', body),
 }

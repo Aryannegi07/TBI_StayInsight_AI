@@ -4,9 +4,9 @@ import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import Loader from '../components/ui/Loader'
 import GoogleButton from '../components/GoogleButton'
-import { useToast } from '../components/ui/Toast'
+import { useToast } from '../hooks/useToast'
 import { AuthAPI } from '../api/api'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 
 export default function Login() {
   const [email, setEmail]               = useState('')
@@ -87,7 +87,7 @@ export default function Login() {
 
             <div className="text-center mb-6">
               <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Sign in to StayInsight</h1>
-              <p className="text-sm text-gray-500 mt-1">Enter your credentials below</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Enter your credentials below</p>
               <p className="text-xs text-gray-400 mt-2">
                 Demo: <span className="font-mono">admin@stayinsight.ai</span> / <span className="font-mono">password123</span>
               </p>
@@ -178,7 +178,7 @@ export default function Login() {
 
             <GoogleButton />
 
-            <p className="mt-5 text-center text-xs text-gray-500">
+            <p className="mt-5 text-center text-xs text-gray-500 dark:text-gray-400">
               Don't have an account?{' '}
               <Link to="/register" className="text-brand-600 hover:text-brand-700 font-medium transition-colors">
                 Create one

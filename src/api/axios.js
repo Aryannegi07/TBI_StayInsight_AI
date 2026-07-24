@@ -6,8 +6,15 @@
 import axios from 'axios'
 import { getToken, removeToken } from './api'
 
+// In dev, Vite's proxy (vite.config.js) forwards '/api' to the local
+// backend, so no env var is needed. In production the frontend and
+// backend are deployed separately (e.g. Vercel + Render), so
+// VITE_API_URL must point at the deployed backend's '/api' base —
+// see .env.example.
+const baseURL = import.meta.env.VITE_API_URL || '/api'
+
 const axiosInstance = axios.create({
-  baseURL: '/api',
+  baseURL,
   headers: { 'Content-Type': 'application/json' },
 })
 

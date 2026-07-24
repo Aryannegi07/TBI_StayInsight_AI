@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import Loader from '../components/ui/Loader'
-import { useToast } from '../components/ui/Toast'
+import { useToast } from '../hooks/useToast'
 import { AuthAPI, setToken } from '../api/api'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 
 /**
  * OAuthCallback
